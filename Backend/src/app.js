@@ -11,6 +11,7 @@ const defaultAllowedOrigins = [
   "http://127.0.0.1:3000",
   "http://localhost:5174",
   "http://127.0.0.1:5174",
+  "https://blog-web-eta-ten.vercel.app",
 ];
 
 if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== "*") {
@@ -23,7 +24,12 @@ if (process.env.CLIENT_URL) {
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || defaultAllowedOrigins.includes(origin) || process.env.CORS_ORIGIN === "*") {
+      if (
+        !origin ||
+        defaultAllowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app") ||
+        process.env.CORS_ORIGIN === "*"
+      ) {
         return callback(null, origin || true);
       }
       return callback(null, origin);
