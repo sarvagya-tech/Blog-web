@@ -4,91 +4,99 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { Comment } from "../models/comment.model.js";
 import { Blog } from "../models/blog.model.js";
 
-const createComment = asynchandler(async(req,res)=>{
-         const {content} = req.body;
-         const {blogId} = req.params
+const getBlogComments = asynchandler(async (req, res) => {
+  const { blogId } = req.params;
 
-         if(!content){
-            throw new ApiError(400,"content is required")
-         }
-         const commentedBy = req.user._id;
-         if(!commentedBy){
-            throw new ApiError(404,"comment not found ")
-         }
-         const commentedOn = blogId;
-         if(!commentedOn){
-            throw new ApiError(404,"comment not found ")
-         }
-         const blog = await Blog.findById(blogId)
+  const blog = await Blog.findById(blogId);
+  if (!blog) {
+    throw new ApiError(404, "Blog not found");
+  }
 
-         if(!blog){
-            throw new ApiError(404,"blog not found ")
-         }
+  const comments = await Comment.find({ commentedOn: blogId })
+    .populate("commentedBy", "username fullname avatar")
+    .sort({ createdAt: -1 });
 
-         const comment = await Comment.create({
-            content,
-            commentedBy : req.user._id,
-            commentedOn : blogId
-         })
+  return res
+    .status(200)
+    .json(new ApiResponse(200, comments, "Comments fetched successfully"));
+});
 
-         return res
-         .status(200)
-         .json(new ApiResponse(200,comment,"commented succesfully "))
-})
+const createComment = asynchandler(async (req, res) => {
+  const { content } = req.body;
+  const { blogId } = req.params;
 
+  if (!content || !content.trim()) {
+    throw new ApiError(400, "Comment content is required");
+  }
 
-const deleteComment = asynchandler(async(req,res)=>{
-       
-   const comment = await Comment.findById(req.params.commentId)
+  const blog = await Blog.findById(blogId);
+  if (!blog) {
+    throw new ApiError(404, "Blog not found");
+  }
 
-   if(!comment){
-      throw new ApiError(404,"comment not found ")
-   }
+  const comment = await Comment.create({
+    content: content.trim(),
+    commentedBy: req.user._id,
+    commentedOn: blogId,
+  });
 
-    if (comment.commentedBy.toString() !== req.user._id.toString()) {
-        throw new ApiError(403, "You are not authorized to delete this comment");
-    }
+  const populatedComment = await Comment.findById(comment._id).populate(
+    "commentedBy",
+    "username fullname avatar"
+  );
 
-   await Comment.findByIdAndDelete(req.params.commentId)
+  return res
+    .status(201)
+    .json(new ApiResponse(201, populatedComment, "Comment added successfully"));
+});
 
-   return res
-   .status(200)
-   .json(new ApiResponse(200,{},"deleted successfully"))
+const deleteComment = asynchandler(async (req, res) => {
+  const { commentId } = req.params;
 
-})
+  const comment = await Comment.findById(commentId);
+  if (!comment) {
+    throw new ApiError(404, "Comment not found");
+  }
 
-const updateComment = asynchandler(async(req,res)=>{
+  if (comment.commentedBy.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "You are not authorized to delete this comment");
+  }
 
-   const {content} = req.body;
-   if(!content){
-     throw new ApiError(404,"comment content is requird ")
-   }
-       const comment = await Comment.findById(req.params.commentId);
+  await Comment.findByIdAndDelete(commentId);
 
-       if(!comment){
-         throw new ApiError(404,"comment not found ")
-       }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Comment deleted successfully"));
+});
 
-       if(comment.commentedBy.toString()!== req.user._id.toString()){
-         throw new ApiError(403,"you are not aurthorized")
-       }
+const updateComment = asynchandler(async (req, res) => {
+  const { content } = req.body;
+  const { commentId } = req.params;
 
-       const updatedComment = await Comment.findByIdAndUpdate(req.params.commentId,{
-         $set :{
-            content
-         }
-       },
-       {
-         new : true
-       }
-       )
-       return res
-       .status(200)
-       .json(new ApiResponse(200,updatedComment,"updated successfully"))
+  if (!content || !content.trim()) {
+    throw new ApiError(400, "Comment content is required");
+  }
 
-       
-})
-export {createComment,
-   deleteComment,
-   updateComment
-}
+  const comment = await Comment.findById(commentId);
+  if (!comment) {
+    throw new ApiError(404, "Comment not found");
+  }
+
+  if (comment.commentedBy.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "You are not authorized to update this comment");
+  }
+
+  const updatedComment = await Comment.findByIdAndUpdate(
+    commentId,
+    {
+      $set: { content: content.trim() },
+    },
+    { new: true }
+  ).populate("commentedBy", "username fullname avatar");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedComment, "Comment updated successfully"));
+});
+
+export { getBlogComments, createComment, deleteComment, updateComment };

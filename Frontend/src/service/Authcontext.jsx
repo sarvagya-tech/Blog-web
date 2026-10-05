@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { currentUser } from "./axios";
+import { currentUser, logoutUser } from "./axios";
 
 const Authcontext = createContext();
 
@@ -11,7 +11,13 @@ export const AuthProvider = ({ children }) => {
     const loadCurrentUser = async () => {
       try {
         const response = await currentUser();
-        setUser(response?.user ?? response?.data?.data ?? response?.data ?? null);
+        const userData =
+          response?.user ??
+          response?.data?.user ??
+          response?.data?.data ??
+          response?.data ??
+          null;
+        setUser(userData);
       } catch (error) {
         setUser(null);
       } finally {
@@ -23,11 +29,21 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (response) => {
-    const userData = response?.user ?? response?.data?.data ?? response?.data ?? null;
+    const token = response?.data?.accessToken ?? response?.accessToken;
+    if (token) {
+      localStorage.setItem("accessToken", token);
+    }
+    const userData =
+      response?.data?.user ??
+      response?.user ??
+      response?.data?.data ??
+      response?.data ??
+      null;
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await logoutUser();
     setUser(null);
   };
 

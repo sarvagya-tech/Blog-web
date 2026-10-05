@@ -1,20 +1,19 @@
-import React from 'react';
 import NavBar from '../components/NavBar';
-import Header from '../components/Header';
 import BlogList from '../components/BlogList';
 import Newsletter from '../components/Newsletter';
 import Footer from '../components/Footer';
 
-function Home() {
+function ArticlesPage() {
   return (
-    <>
+    <div className="min-h-screen bg-slate-950 text-white">
       <NavBar />
-      <Header />
-      <BlogList />
-      <Newsletter />
+      <main className="pt-6">
+        <BlogList />
+        <Newsletter />
+      </main>
       <Footer />
-    </>
+    </div>
   );
 }
 
-export default Home;
+export default ArticlesPage;

@@ -1,17 +1,17 @@
 import { Router } from "express";
 import { verifyJwt } from "../middleware/Auth.middleware.js";
-import { createComment, deleteComment, updateComment } from "../controllers/comment.controller.js";
+import {
+  createComment,
+  deleteComment,
+  getBlogComments,
+  updateComment,
+} from "../controllers/comment.controller.js";
 
-const commentRouter = Router()
+const commentRouter = Router();
 
-commentRouter
-.route("/:blogId").post(verifyJwt,createComment)
+commentRouter.get("/:blogId", getBlogComments);
+commentRouter.post("/:blogId", verifyJwt, createComment);
+commentRouter.delete("/:commentId", verifyJwt, deleteComment);
+commentRouter.patch("/:commentId", verifyJwt, updateComment);
 
-
-commentRouter
-.delete("/:commentId",verifyJwt,deleteComment)
-
-commentRouter
-.route("/:commentId").patch(verifyJwt,updateComment)
-
-export {commentRouter}
+export { commentRouter };
