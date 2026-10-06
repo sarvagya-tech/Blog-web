@@ -74,7 +74,7 @@ const registerUser = async (req, res) => {
 
     const user = await User.create({
       fullname,
-      avatar: avatar.url,
+      avatar: avatar.secure_url || avatar.url,
       email,
       password,
       username: username.toLowerCase(),

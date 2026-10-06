@@ -14,25 +14,31 @@ const defaultAllowedOrigins = [
   "https://blog-web-eta-ten.vercel.app",
 ];
 
-if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== "*") {
-  defaultAllowedOrigins.push(process.env.CORS_ORIGIN);
+if (process.env.CORS_ORIGIN) {
+  process.env.CORS_ORIGIN.split(",")
+    .map((o) => o.trim())
+    .filter(Boolean)
+    .forEach((o) => {
+      if (!defaultAllowedOrigins.includes(o)) {
+        defaultAllowedOrigins.push(o);
+      }
+    });
 }
-if (process.env.CLIENT_URL) {
-  defaultAllowedOrigins.push(process.env.CLIENT_URL);
+if (process.env.CLIENT_URL && !defaultAllowedOrigins.includes(process.env.CLIENT_URL.trim())) {
+  defaultAllowedOrigins.push(process.env.CLIENT_URL.trim());
 }
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (
-        !origin ||
-        defaultAllowedOrigins.includes(origin) ||
-        origin.endsWith(".vercel.app") ||
-        process.env.CORS_ORIGIN === "*"
-      ) {
-        return callback(null, origin || true);
+      // Allow requests with no origin (e.g., mobile apps, Postman, server-side)
+      if (!origin) {
+        return callback(null, true);
       }
-      return callback(null, origin);
+      if (defaultAllowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

@@ -15,14 +15,19 @@ const CreateBlog = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image file is too large. Maximum size is 5MB.');
+        return;
+      }
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
+      setError('');
     } else {
       setImage(null);
       setImagePreview(null);
@@ -44,11 +49,21 @@ const CreateBlog = () => {
       return;
     }
 
+    if (title.trim().length < 3) {
+      setError('Title must be at least 3 characters long.');
+      return;
+    }
+
+    if (content.trim().length < 10) {
+      setError('Content must be at least 10 characters long.');
+      return;
+    }
+
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('title', title.trim());
-      formData.append('category', category.trim());
+      formData.append('category', category.trim() || 'General');
       formData.append('content', content.trim());
       formData.append('excerpt', excerpt.trim());
       if (image) {
@@ -65,14 +80,14 @@ const CreateBlog = () => {
       setImage(null);
       setImagePreview(null);
 
-      const createdId = response?.data?._id;
+      const createdId = response?.data?._id || response?.data?.id;
       setTimeout(() => {
         if (createdId) {
           navigate(`/blog/${createdId}`);
         } else {
-          navigate('/');
+          navigate('/blog');
         }
-      }, 1200);
+      }, 1000);
     } catch (err) {
       const msg =
         err.response?.data?.message ||
@@ -128,7 +143,7 @@ const CreateBlog = () => {
           {/* Form Container */}
           <form
             onSubmit={handleSubmit}
-            className="space-y-6 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm shadow-2xl sm:p-10"
+            className="space-y-6 rounded-3xl border border-white/10 bg-slate-900/80 p-8 backdrop-blur-xl shadow-2xl sm:p-10"
           >
             {/* Title Input */}
             <div>
@@ -158,7 +173,7 @@ const CreateBlog = () => {
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g., Technology, Design, Productivity..."
+                placeholder="e.g., Technology, Design, Productivity, Lifestyle..."
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-slate-400 transition focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
               />
             </div>
@@ -174,7 +189,7 @@ const CreateBlog = () => {
                 rows="3"
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
-                placeholder="Write a brief summary of your blog post..."
+                placeholder="Write a brief summary of your blog post (optional, auto-generated from content if left blank)..."
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-slate-400 resize-vertical transition focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
               />
             </div>
@@ -191,7 +206,7 @@ const CreateBlog = () => {
                 required
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Write your full blog content here. Feel free to express your ideas..."
+                placeholder="Write your full blog content here..."
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-slate-400 resize-vertical transition focus:border-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
               />
             </div>
@@ -199,7 +214,7 @@ const CreateBlog = () => {
             {/* Image Upload */}
             <div>
               <label htmlFor="image" className="mb-3 block text-sm font-semibold uppercase tracking-[0.12em] text-amber-100">
-                Featured Image <span className="text-xs font-normal text-slate-400">(Optional)</span>
+                Featured Image <span className="text-xs font-normal text-slate-400">(Optional, Max 5MB)</span>
               </label>
               <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 p-6 text-center transition hover:border-amber-300/40 hover:bg-white/10">
                 <input
@@ -227,7 +242,7 @@ const CreateBlog = () => {
                       <p className="text-sm font-medium text-slate-300">
                         Click to upload or drag and drop
                       </p>
-                      <p className="text-xs text-slate-400">PNG, JPG, GIF up to 5MB</p>
+                      <p className="text-xs text-slate-400">PNG, JPG, WEBP, GIF up to 5MB</p>
                     </div>
                   )}
                 </label>
@@ -237,13 +252,15 @@ const CreateBlog = () => {
             {/* Status Messages & Action Buttons */}
             <div className="space-y-4 pt-4">
               {error && (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
-                  ⚠️ {error}
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-xs text-red-300 flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>{error}</span>
                 </div>
               )}
               {success && (
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300">
-                  ✅ {success}
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-300 flex items-center gap-2">
+                  <span>✅</span>
+                  <span>{success}</span>
                 </div>
               )}
 
@@ -251,27 +268,20 @@ const CreateBlog = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-white transition hover:border-white/40 hover:bg-white/10"
+                  className="rounded-full border border-white/20 bg-white/5 px-6 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:border-white/40 hover:bg-white/10"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="rounded-full bg-gradient-to-r from-amber-400 to-amber-300 px-8 py-3 text-sm font-bold uppercase tracking-[0.12em] text-slate-950 transition hover:shadow-lg hover:shadow-amber-400/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading || !isAuthenticated}
+                  className="rounded-full bg-gradient-to-r from-amber-400 to-amber-300 px-8 py-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-950 transition hover:shadow-lg hover:shadow-amber-400/30 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Publishing...' : 'Publish Blog'}
                 </button>
               </div>
             </div>
           </form>
-
-          {/* Info Box */}
-          <div className="mt-12 rounded-2xl border border-amber-300/20 bg-amber-400/10 p-6">
-            <p className="text-sm leading-7 text-amber-50">
-              <span className="font-semibold">💡 Tip:</span> Write engaging titles that capture attention, use clear excerpts to hook readers, and structure your content with proper paragraphs for better readability.
-            </p>
-          </div>
         </div>
       </div>
     </>

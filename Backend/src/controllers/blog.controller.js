@@ -19,8 +19,8 @@ const createBlog = asynchandler(async (req, res) => {
 
   if (mediaLocalpath) {
     const media = await UploadOnCloudinary(mediaLocalpath);
-    if (media?.url) {
-      mediaUrl = media.url;
+    if (media?.secure_url || media?.url) {
+      mediaUrl = media.secure_url || media.url;
     }
   }
 
